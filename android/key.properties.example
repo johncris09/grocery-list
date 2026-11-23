@@ -1,0 +1,8 @@
+# Copy to android/key.properties (git-ignored) and fill in.
+# storeFile is resolved relative to android/app/, or use an absolute path.
+# Keep the keystore OUTSIDE the repo and back it up — losing it means you
+# can no longer publish updates that install over existing versions.
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=upload
+storeFile=C:/Users/YOU/keys/grocery-list-upload.jks

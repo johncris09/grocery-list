@@ -15,6 +15,25 @@ flutter test           # unit + widget tests
 flutter analyze
 ```
 
+## Release APK
+
+Release builds are signed with the key described in `android/key.properties` (git-ignored). Without it, Gradle falls back to the debug key and prints a warning.
+
+One-time setup:
+
+1. Create an upload keystore **outside the repo** (keytool prompts for passwords):
+   ```bash
+   keytool -genkeypair -v -keystore ~/keys/grocery-list-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+2. Copy `android/key.properties.example` to `android/key.properties` and fill in the passwords and keystore path.
+3. Back up the keystore and passwords. Without them you can't ship updates that install over existing versions.
+
+Build:
+
+```bash
+flutter build apk --release   # → build/app/outputs/flutter-apk/app-release.apk
+```
+
 ## How it works
 
 | Layer | Path | Notes |
