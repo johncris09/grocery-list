@@ -158,6 +158,10 @@ class _GroceriesScreenState extends ConsumerState<GroceriesScreen> {
                               groups: ref.watch(toBuyGroupsProvider),
                               labelFor: (g) => g.isToday ? 'Today' : 'Planned',
                               empty: 'Nothing to buy. Add an item above.',
+                              hint: 'Drag ⋮⋮ to reorder · long-press to edit · '
+                                  'swipe left to delete',
+                              onReorder: (g, from, to) =>
+                                  _ctrl.reorderToBuy(g.date, from, to),
                             )
                           : _GroupedList(
                               key: const ValueKey('list-bought'),
@@ -283,54 +287,114 @@ class _AddRow extends StatelessWidget {
   }
 }
 
-class _GroupedList extends ConsumerWidget {
+class _GroupedList extends ConsumerStatefulWidget {
   const _GroupedList({
     super.key,
     required this.groups,
     required this.labelFor,
     required this.empty,
+    this.hint = 'Long-press an item to edit · swipe left to delete',
+    this.onReorder,
   });
 
   final List<DateGroup> groups;
   final String Function(DateGroup) labelFor;
   final String empty;
+  final String hint;
+
+  /// When set, each section's rows get a grip and can be dragged within
+  /// that section. [to] is the item's final index after the move.
+  final void Function(DateGroup group, int from, int to)? onReorder;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_GroupedList> createState() => _GroupedListState();
+}
+
+class _GroupedListState extends ConsumerState<_GroupedList> {
+  /// Section being dragged in; the other sections dim while it's set.
+  DateTime? _dragging;
+
+  @override
+  Widget build(BuildContext context) {
+    final groups = widget.groups;
     if (groups.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: 32),
         child: Align(
           alignment: Alignment.topCenter,
-          child: Text(empty, style: mutedStyle14),
+          child: Text(widget.empty, style: mutedStyle14),
         ),
       );
     }
     final ctrl = ref.read(groceryControllerProvider.notifier);
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 16),
-      children: [
+    final onReorder = widget.onReorder;
+    final dragging = _dragging;
+
+    Widget dim(DateGroup g, Widget child) => AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          opacity: dragging == null || isSameDay(dragging, g.date) ? 1 : 0.45,
+          child: child,
+        );
+
+    Widget row(DateGroup g, int index) {
+      final item = g.items[index];
+      return KeyedSubtree(
+        key: ValueKey('slot-${item.id}'),
+        child: dim(
+          g,
+          ItemRow(
+            key: ValueKey('row-${item.id}'),
+            item: item,
+            dragIndex: onReorder == null ? null : index,
+            onToggle: () => ctrl.toggleBought(item.id),
+            onDelete: () => deleteWithUndo(
+              ScaffoldMessenger.of(context),
+              ctrl,
+              item.id,
+            ),
+            onEdit: () => showEditItemSheet(context, item),
+          ),
+        ),
+      );
+    }
+
+    return CustomScrollView(
+      slivers: [
         for (final g in groups) ...[
-          SectionHeader(label: labelFor(g), trailing: formatShortDate(g.date)),
-          for (final item in g.items)
-            ItemRow(
-              key: ValueKey('row-${item.id}'),
-              item: item,
-              onToggle: () => ctrl.toggleBought(item.id),
-              onDelete: () => deleteWithUndo(
-                ScaffoldMessenger.of(context),
-                ctrl,
-                item.id,
+          SliverToBoxAdapter(
+            child: dim(
+              g,
+              SectionHeader(
+                label: widget.labelFor(g),
+                trailing: formatShortDate(g.date),
               ),
-              onEdit: () => showEditItemSheet(context, item),
+            ),
+          ),
+          if (onReorder == null)
+            SliverList.list(
+              children: [for (var i = 0; i < g.items.length; i++) row(g, i)],
+            )
+          else
+            SliverReorderableList(
+              itemCount: g.items.length,
+              itemBuilder: (context, i) => row(g, i),
+              proxyDecorator: liftedRowDecorator,
+              onReorderStart: (_) => setState(() => _dragging = g.date),
+              onReorderEnd: (_) => setState(() => _dragging = null),
+              // Flutter reports the drop slot before removal; convert it to
+              // the item's final index.
+              onReorder: (from, to) =>
+                  onReorder(g, from, to > from ? to - 1 : to),
             ),
         ],
-        const Padding(
-          padding: EdgeInsets.only(top: 14),
-          child: Text(
-            'Long-press an item to edit · swipe left to delete',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: AppColors.muted),
+        SliverPadding(
+          padding: const EdgeInsets.only(top: 14, bottom: 16),
+          sliver: SliverToBoxAdapter(
+            child: Text(
+              widget.hint,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: AppColors.muted),
+            ),
           ),
         ),
       ],

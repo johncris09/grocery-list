@@ -112,6 +112,8 @@ class SectionHeader extends StatelessWidget {
 }
 
 /// A list row: checkbox, name, quantity. The whole row toggles.
+/// When [dragIndex] is set, a grip on the right starts drag-to-reorder
+/// (the row must then live inside a [SliverReorderableList]).
 class ItemRow extends StatelessWidget {
   const ItemRow({
     super.key,
@@ -119,6 +121,7 @@ class ItemRow extends StatelessWidget {
     required this.onToggle,
     required this.onDelete,
     required this.onEdit,
+    this.dragIndex,
   });
 
   final GroceryItem item;
@@ -128,9 +131,13 @@ class ItemRow extends StatelessWidget {
   /// Long-press opens the edit sheet.
   final VoidCallback onEdit;
 
+  /// Index within the enclosing reorderable section; null = no grip.
+  final int? dragIndex;
+
   @override
   Widget build(BuildContext context) {
     final done = item.isBought;
+    final index = dragIndex;
     return Dismissible(
       key: ValueKey('dismiss-${item.id}'),
       direction: DismissDirection.endToStart,
@@ -146,65 +153,128 @@ class ItemRow extends StatelessWidget {
       ),
       child: Material(
         color: AppColors.surface,
-        child: InkWell(
-          onTap: onToggle,
-          onLongPress: onEdit,
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 56),
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.divider)),
-            ),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Transform.scale(
-                    scale: 24 / 18,
-                    child: Checkbox(
-                      key: ValueKey('check-${item.id}'),
-                      value: done,
-                      onChanged: (_) => onToggle(),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: const VisualDensity(
-                        horizontal: VisualDensity.minimumDensity,
-                        vertical: VisualDensity.minimumDensity,
+        child: Container(
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: AppColors.divider)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: onToggle,
+                  onLongPress: onEdit,
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 56),
+                    padding:
+                        EdgeInsets.fromLTRB(4, 8, index == null ? 4 : 0, 8),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Transform.scale(
+                            scale: 24 / 18,
+                            child: Checkbox(
+                              key: ValueKey('check-${item.id}'),
+                              value: done,
+                              onChanged: (_) => onToggle(),
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: const VisualDensity(
+                                horizontal: VisualDensity.minimumDensity,
+                                vertical: VisualDensity.minimumDensity,
+                              ),
+                              semanticLabel: item.name,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w500,
+                              color: done ? AppColors.doneText : AppColors.ink,
+                              decoration:
+                                  done ? TextDecoration.lineThrough : null,
+                              decorationColor: AppColors.doneText,
+                            ),
+                          ),
+                        ),
+                        if (item.quantity.isNotEmpty) ...[
+                          const SizedBox(width: 14),
+                          Text(
+                            item.quantity,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: done ? AppColors.doneQty : AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              if (index != null)
+                ReorderableDragStartListener(
+                  key: ValueKey('grip-${item.id}'),
+                  index: index,
+                  child: Semantics(
+                    label: 'Reorder ${item.name}',
+                    child: const SizedBox(
+                      width: 44,
+                      height: 56,
+                      child: Icon(
+                        Icons.drag_indicator,
+                        size: 22,
+                        color: AppColors.doneQty,
                       ),
-                      semanticLabel: item.name,
                     ),
                   ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    item.name,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w500,
-                      color: done ? AppColors.doneText : AppColors.ink,
-                      decoration: done ? TextDecoration.lineThrough : null,
-                      decorationColor: AppColors.doneText,
-                    ),
-                  ),
-                ),
-                if (item.quantity.isNotEmpty) ...[
-                  const SizedBox(width: 14),
-                  Text(
-                    item.quantity,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: done ? AppColors.doneQty : AppColors.muted,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+/// How a row looks while it's being dragged: lifted, green outline.
+Widget liftedRowDecorator(
+  Widget child,
+  int index,
+  Animation<double> animation,
+) {
+  return AnimatedBuilder(
+    animation: animation,
+    child: child,
+    builder: (context, child) {
+      final t = Curves.easeOut.transform(animation.value);
+      return Transform.scale(
+        scale: 1 + 0.02 * t,
+        child: Material(
+          elevation: 6 * t,
+          shadowColor: const Color(0x33000000),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(10),
+          clipBehavior: Clip.antiAlias,
+          child: Container(
+            foregroundDecoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: t),
+                width: 1.5,
+              ),
+            ),
+            child: child,
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// Segmented "To buy · N | Bought · N" control.

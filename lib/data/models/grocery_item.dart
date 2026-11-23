@@ -13,6 +13,7 @@ class GroceryItem {
     required this.createdAt,
     this.boughtAt,
     this.tripId,
+    this.sortOrder,
   });
 
   final String id;
@@ -32,6 +33,10 @@ class GroceryItem {
   final String? tripId;
   final DateTime createdAt;
 
+  /// Manual position within its To buy section, set when the user drags
+  /// rows. Null means "not reordered yet": the item sorts by [createdAt].
+  final int? sortOrder;
+
   bool get isBought => status == ItemStatus.bought;
   bool get isArchived => tripId != null;
 
@@ -46,6 +51,8 @@ class GroceryItem {
     String? tripId,
     bool clearTripId = false,
     DateTime? createdAt,
+    int? sortOrder,
+    bool clearSortOrder = false,
   }) {
     return GroceryItem(
       id: id ?? this.id,
@@ -56,6 +63,7 @@ class GroceryItem {
       boughtAt: clearBoughtAt ? null : (boughtAt ?? this.boughtAt),
       tripId: clearTripId ? null : (tripId ?? this.tripId),
       createdAt: createdAt ?? this.createdAt,
+      sortOrder: clearSortOrder ? null : (sortOrder ?? this.sortOrder),
     );
   }
 
@@ -69,6 +77,7 @@ class GroceryItem {
         'boughtAt': boughtAt?.toIso8601String(),
         'tripId': tripId,
         'createdAt': createdAt.toIso8601String(),
+        'sortOrder': sortOrder,
       };
 
   factory GroceryItem.fromJson(Map<dynamic, dynamic> json) => GroceryItem(
@@ -82,6 +91,7 @@ class GroceryItem {
             : DateTime.parse(json['boughtAt'] as String),
         tripId: json['tripId'] as String?,
         createdAt: DateTime.parse(json['createdAt'] as String),
+        sortOrder: json['sortOrder'] as int?,
       );
 
   @override

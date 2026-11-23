@@ -71,8 +71,33 @@ List<DateGroup> groupToBuyByPlannedDate(
       DateGroup(
         date: d,
         isToday: isSameDay(d, t),
-        items: byDate[d]!..sort((a, b) => a.createdAt.compareTo(b.createdAt)),
+        items: byDate[d]!..sort(compareListPosition),
       ),
+  ];
+}
+
+/// Order inside a To buy section. Dragged items carry a small [sortOrder]
+/// (0, 1, 2...); untouched items fall back to their creation time in
+/// microseconds, which is always larger, so new items land at the bottom.
+int listPosition(GroceryItem item) =>
+    item.sortOrder ?? item.createdAt.microsecondsSinceEpoch;
+
+int compareListPosition(GroceryItem a, GroceryItem b) {
+  final byPosition = listPosition(a).compareTo(listPosition(b));
+  return byPosition != 0 ? byPosition : a.createdAt.compareTo(b.createdAt);
+}
+
+/// Moves the item at [from] to final index [to] within [section] and
+/// renumbers the whole section 0..n-1. Returns only the items whose
+/// [GroceryItem.sortOrder] changed.
+List<GroceryItem> reorderSection(List<GroceryItem> section, int from, int to) {
+  if (from < 0 || from >= section.length) return const [];
+  final target = to.clamp(0, section.length - 1);
+  final ordered = [...section];
+  ordered.insert(target, ordered.removeAt(from));
+  return [
+    for (var i = 0; i < ordered.length; i++)
+      if (ordered[i].sortOrder != i) ordered[i].copyWith(sortOrder: i),
   ];
 }
 
@@ -150,6 +175,9 @@ GroceryItem applyEdit(
       name: cleanText(name),
       quantity: cleanText(quantity),
       plannedDate: dateOnly(plannedDate),
+      // Moving to another day drops the manual position, so the item
+      // joins the bottom of its new section instead of a random slot.
+      clearSortOrder: !isSameDay(plannedDate, item.plannedDate),
     );
 
 GroceryItem newItem({

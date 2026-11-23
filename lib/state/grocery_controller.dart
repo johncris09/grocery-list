@@ -128,6 +128,21 @@ class GroceryController extends Notifier<GroceryData> {
     return EditItemResult.saved;
   }
 
+  /// Drag-to-reorder inside the To buy section dated [sectionDate].
+  /// [from] and [to] are indexes within that section ([to] is the final
+  /// position after the move).
+  void reorderToBuy(DateTime sectionDate, int from, int to) {
+    if (from == to) return;
+    final section = groupToBuyByPlannedDate(state.items, today)
+        .where((g) => isSameDay(g.date, sectionDate))
+        .firstOrNull;
+    if (section == null) return;
+    final updated = reorderSection(section.items, from, to);
+    if (updated.isEmpty) return;
+    _replaceItems(updated);
+    _persist(_repo.upsertItems(updated));
+  }
+
   /// Removes an item and returns it so the UI can offer Undo.
   GroceryItem? deleteItem(String id) {
     final removed = state.items.where((i) => i.id == id).firstOrNull;

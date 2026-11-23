@@ -87,4 +87,39 @@ void main() {
   test('save trip with nothing bought returns null', () {
     expect(ctrl().saveTrip(), isNull);
   });
+
+  test('reorderToBuy reorders one section and writes through', () async {
+    final planned = DateTime(2026, 11, 25);
+    container = makeContainer([
+      item('Rice', createdAt: DateTime(2026, 11, 20, 1)),
+      item('Milk', createdAt: DateTime(2026, 11, 20, 2)),
+      item('Eggs', createdAt: DateTime(2026, 11, 20, 3)),
+      item('Oil', planned: planned, createdAt: DateTime(2026, 11, 20, 4)),
+      item('Salt', planned: planned, createdAt: DateTime(2026, 11, 20, 5)),
+    ]);
+    List<List<String>> sections() => [
+          for (final g in container.read(toBuyGroupsProvider))
+            [for (final i in g.items) i.name],
+        ];
+
+    ctrl().reorderToBuy(kToday, 2, 0);
+    expect(sections(), [
+      ['Eggs', 'Rice', 'Milk'],
+      ['Oil', 'Salt'],
+    ]);
+
+    ctrl().reorderToBuy(planned, 0, 1);
+    expect(sections(), [
+      ['Eggs', 'Rice', 'Milk'],
+      ['Salt', 'Oil'],
+    ]);
+
+    await Future<void>.delayed(Duration.zero);
+    expect(repo.items['eggs']!.sortOrder, 0);
+    expect(repo.items['salt']!.sortOrder, 0);
+
+    // Added later: goes to the bottom of today's section.
+    ctrl().addItem('Bread', kToday);
+    expect(sections().first, ['Eggs', 'Rice', 'Milk', 'Bread']);
+  });
 }
