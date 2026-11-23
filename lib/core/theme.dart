@@ -16,6 +16,7 @@ class AppColors {
   static const tabTrack = Color(0xFFEDECE6);
   static const doneText = Color(0xFF8A8880);
   static const doneQty = Color(0xFFA3A199);
+  static const danger = Color(0xFFA8382A); // swipe-to-delete background
 }
 
 ThemeData buildAppTheme() {

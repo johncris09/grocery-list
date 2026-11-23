@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() {
-  runApp(const MainApp());
-}
+import 'app.dart';
+import 'data/repositories/hive_grocery_repository.dart';
+import 'state/grocery_controller.dart';
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
-    );
-  }
+  // Local-first: everything lives in Hive on the device. To move to the
+  // Laravel API later, swap this repository for an API-backed one.
+  final repository = await HiveGroceryRepository.open();
+  final data = GroceryData(
+    items: await repository.loadItems(),
+    trips: await repository.loadTrips(),
+  );
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        groceryRepositoryProvider.overrideWithValue(repository),
+        initialGroceryDataProvider.overrideWithValue(data),
+      ],
+      child: const GroceryApp(),
+    ),
+  );
 }

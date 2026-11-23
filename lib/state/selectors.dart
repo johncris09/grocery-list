@@ -42,9 +42,10 @@ final countsProvider = Provider<ListCounts>((ref) {
   );
 });
 
-final historySearchProvider = StateProvider<String>((ref) => '');
+/// Search text on the history screen; resets when the screen closes.
+final historySearchProvider = StateProvider.autoDispose<String>((ref) => '');
 
-final historyProvider = Provider<List<TripView>>((ref) {
+final historyProvider = Provider.autoDispose<List<TripView>>((ref) {
   final data = ref.watch(groceryControllerProvider);
   return historyTrips(
     data.trips,
