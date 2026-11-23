@@ -118,11 +118,15 @@ class ItemRow extends StatelessWidget {
     required this.item,
     required this.onToggle,
     required this.onDelete,
+    required this.onEdit,
   });
 
   final GroceryItem item;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
+
+  /// Long-press opens the edit sheet.
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -144,6 +148,7 @@ class ItemRow extends StatelessWidget {
         color: AppColors.surface,
         child: InkWell(
           onTap: onToggle,
+          onLongPress: onEdit,
           child: Container(
             constraints: const BoxConstraints(minHeight: 56),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),

@@ -8,6 +8,7 @@ import '../../domain/grocery_logic.dart';
 import '../../state/grocery_controller.dart';
 import '../../state/selectors.dart';
 import '../widgets/common.dart';
+import '../widgets/edit_item_sheet.dart';
 import 'history_screen.dart';
 
 /// Screen 1: today's list, the add row, To buy / Bought tabs.
@@ -316,9 +317,22 @@ class _GroupedList extends ConsumerWidget {
               key: ValueKey('row-${item.id}'),
               item: item,
               onToggle: () => ctrl.toggleBought(item.id),
-              onDelete: () => ctrl.deleteItem(item.id),
+              onDelete: () => deleteWithUndo(
+                ScaffoldMessenger.of(context),
+                ctrl,
+                item.id,
+              ),
+              onEdit: () => showEditItemSheet(context, item),
             ),
         ],
+        const Padding(
+          padding: EdgeInsets.only(top: 14),
+          child: Text(
+            'Long-press an item to edit · swipe left to delete',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: AppColors.muted),
+          ),
+        ),
       ],
     );
   }

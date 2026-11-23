@@ -36,11 +36,12 @@ flutter analyze
 - **Bought:** items you've ticked but not yet saved, grouped by the day you bought them. Unticking moves an item back to To buy.
 - **Save trip to history:** moves everything bought *today* into one trip and clears it from the Bought tab.
 - **History:** shows trips from the last 30 days, newest first, and the search filters by item name. Tap a trip's date header to select it (it turns green). **Buy again** copies that trip into today's To buy list and skips names that are already on today's list. It defaults to the newest trip.
-- **Delete:** swipe a row left.
+- **Edit:** long-press a row to open the edit sheet, where you can change the name, quantity and Buy-on date (date only for items still to buy). It uses the same checks as adding: an empty name is rejected, and a name already planned for that date asks first.
+- **Delete:** swipe a row left, or use **Delete** in the edit sheet. A "deleted · Undo" message stays for 4 seconds.
 
 ## Still placeholder / not built
 
-- No way to edit an item's name, quantity or date after adding it (you can delete and re-add).
+- Items inside saved trips (History) can't be edited or deleted.
 - If the app stays open past midnight, "today" updates on the next interaction, not exactly at midnight.
 - Bought items from earlier days that were never saved stay in the Bought tab. "Save trip" only archives today's.
 - Trips can't be deleted or edited, and items older than 30 days stay in storage (history only hides them).

@@ -117,21 +117,40 @@ GroceryItem toggleBought(GroceryItem item, DateTime now) =>
     item.isBought ? markToBuy(item) : markBought(item, now);
 
 /// True when a to-buy item with the same name is already planned for
-/// [date] (case-insensitive, overdue items count as today).
+/// [date] (case-insensitive, overdue items count as today). [excludeId]
+/// skips the item being edited so it doesn't clash with itself.
 bool hasDuplicateOnDate(
   Iterable<GroceryItem> items,
   String name,
   DateTime date,
-  DateTime today,
-) {
+  DateTime today, {
+  String? excludeId,
+}) {
   final key = normalizeName(name);
   final d = dateOnly(date);
   return toBuyItems(items).any(
     (i) =>
+        i.id != excludeId &&
         normalizeName(i.name) == key &&
         isSameDay(effectivePlannedDate(i, today), d),
   );
 }
+
+/// Collapses inner whitespace and trims: "  Brown   rice " -> "Brown rice".
+String cleanText(String raw) => raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+/// Applies an edit from the edit sheet. Name must already be validated.
+GroceryItem applyEdit(
+  GroceryItem item, {
+  required String name,
+  required String quantity,
+  required DateTime plannedDate,
+}) =>
+    item.copyWith(
+      name: cleanText(name),
+      quantity: cleanText(quantity),
+      plannedDate: dateOnly(plannedDate),
+    );
 
 GroceryItem newItem({
   required String id,

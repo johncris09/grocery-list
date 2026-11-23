@@ -42,6 +42,8 @@ final idGeneratorProvider = Provider<IdGenerator>((ref) {
 
 enum AddItemResult { added, emptyName, duplicate }
 
+enum EditItemResult { saved, emptyName, duplicate }
+
 final groceryControllerProvider =
     NotifierProvider<GroceryController, GroceryData>(GroceryController.new);
 
@@ -96,11 +98,53 @@ class GroceryController extends Notifier<GroceryData> {
     _persist(_repo.upsertItems([updated]));
   }
 
-  void deleteItem(String id) {
+  /// Edits name, quantity and planned date. Same rules as adding: empty
+  /// names are rejected, and a same-name to-buy item on the same date
+  /// returns [EditItemResult.duplicate] unless [allowDuplicate].
+  EditItemResult editItem(
+    String id, {
+    required String name,
+    required String quantity,
+    required DateTime plannedDate,
+    bool allowDuplicate = false,
+  }) {
+    final current = state.items.firstWhere((i) => i.id == id);
+    final cleanName = cleanText(name);
+    if (cleanName.isEmpty) return EditItemResult.emptyName;
+    if (!allowDuplicate &&
+        !current.isBought &&
+        hasDuplicateOnDate(state.items, cleanName, plannedDate, now,
+            excludeId: id)) {
+      return EditItemResult.duplicate;
+    }
+    final updated = applyEdit(
+      current,
+      name: cleanName,
+      quantity: quantity,
+      plannedDate: plannedDate,
+    );
+    _replaceItems([updated]);
+    _persist(_repo.upsertItems([updated]));
+    return EditItemResult.saved;
+  }
+
+  /// Removes an item and returns it so the UI can offer Undo.
+  GroceryItem? deleteItem(String id) {
+    final removed = state.items.where((i) => i.id == id).firstOrNull;
+    if (removed == null) return null;
     state = state.copyWith(
       items: state.items.where((i) => i.id != id).toList(),
     );
     _persist(_repo.deleteItem(id));
+    return removed;
+  }
+
+  /// Puts back an item removed by [deleteItem] (Undo). Its createdAt /
+  /// boughtAt keep it in its original place in the list.
+  void restoreItem(GroceryItem item) {
+    if (state.items.any((i) => i.id == item.id)) return;
+    state = state.copyWith(items: [...state.items, item]);
+    _persist(_repo.upsertItems([item]));
   }
 
   /// Archives today's bought items. Returns the trip, or null if there
