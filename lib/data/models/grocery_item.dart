@@ -1,0 +1,89 @@
+import '../../core/dates.dart';
+
+enum ItemStatus { toBuy, bought }
+
+/// One line on the grocery list.
+class GroceryItem {
+  const GroceryItem({
+    required this.id,
+    required this.name,
+    required this.quantity,
+    required this.plannedDate,
+    required this.status,
+    required this.createdAt,
+    this.boughtAt,
+    this.tripId,
+  });
+
+  final String id;
+  final String name;
+
+  /// Free text, e.g. "5 kg" or "1 bunch". May be empty.
+  final String quantity;
+
+  /// Calendar date (time stripped) the user plans to buy this on.
+  final DateTime plannedDate;
+  final ItemStatus status;
+
+  /// When it was ticked off; null while still to buy.
+  final DateTime? boughtAt;
+
+  /// Set once the item is archived into a saved trip.
+  final String? tripId;
+  final DateTime createdAt;
+
+  bool get isBought => status == ItemStatus.bought;
+  bool get isArchived => tripId != null;
+
+  GroceryItem copyWith({
+    String? id,
+    String? name,
+    String? quantity,
+    DateTime? plannedDate,
+    ItemStatus? status,
+    DateTime? boughtAt,
+    bool clearBoughtAt = false,
+    String? tripId,
+    bool clearTripId = false,
+    DateTime? createdAt,
+  }) {
+    return GroceryItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      quantity: quantity ?? this.quantity,
+      plannedDate: plannedDate ?? this.plannedDate,
+      status: status ?? this.status,
+      boughtAt: clearBoughtAt ? null : (boughtAt ?? this.boughtAt),
+      tripId: clearTripId ? null : (tripId ?? this.tripId),
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  /// camelCase JSON; a Laravel API resource can emit the same shape later.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'quantity': quantity,
+        'plannedDate': dateKey(plannedDate),
+        'status': status.name,
+        'boughtAt': boughtAt?.toIso8601String(),
+        'tripId': tripId,
+        'createdAt': createdAt.toIso8601String(),
+      };
+
+  factory GroceryItem.fromJson(Map<dynamic, dynamic> json) => GroceryItem(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        quantity: (json['quantity'] as String?) ?? '',
+        plannedDate: parseDateKey(json['plannedDate'] as String),
+        status: ItemStatus.values.byName(json['status'] as String),
+        boughtAt: json['boughtAt'] == null
+            ? null
+            : DateTime.parse(json['boughtAt'] as String),
+        tripId: json['tripId'] as String?,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+      );
+
+  @override
+  String toString() => 'GroceryItem($name, $quantity, ${status.name})';
+}
