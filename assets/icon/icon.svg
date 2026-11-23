@@ -1,0 +1,13 @@
+<!-- Grocery List app icon — concept B "checklist card". Design reference;
+     PNGs are rendered by tool/generate_icons.py. 108-unit grid = Android adaptive icon dp. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 108 108">
+  <rect width="108" height="108" fill="#F4F3EE"/>
+  <g transform="translate(-2 2)">
+    <rect x="30" y="28" width="48" height="56" rx="7" fill="#2E6B4F"/>
+    <path d="M68 30c2-8 8-11 14-10c0 7-5 12-14 10z" fill="#1F4D38"/>
+    <circle cx="41" cy="45" r="4.5" fill="#F4F3EE"/>
+    <circle cx="41" cy="57" r="4.5" fill="#F4F3EE"/>
+    <circle cx="41" cy="69" r="4" fill="none" stroke="#F4F3EE" stroke-width="2.5"/>
+    <path d="M50 45h18M50 57h18M50 69h12" stroke="#F4F3EE" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>
